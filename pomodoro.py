@@ -1,9 +1,11 @@
+# -*- coding: utf-8-unix; -*-
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Keybinder', '3.0')
 from gi.repository import Gtk
 from gi.repository import Keybinder
 from enum import Enum
+from handler import Handler
 
 
 class KeyBinds(Enum):
@@ -15,33 +17,6 @@ class KeyBinds(Enum):
     quit = "<Ctrl><Alt>Q"
 
 
-class Handler:
-
-    def window_destroy_cb(self, *args):
-        Gtk.main_quit()
-
-    def btn_pomodoro_clicked_cb(self, button):
-        lbl_time.set_text("25:00")
-
-    def btn_short_break_clicked_cb(self, button):
-        lbl_time.set_text("05:00")
-
-    def btn_long_break_clicked_cb(self, button):
-        lbl_time.set_text("10:00")
-
-    def btn_start_clicked_cb(self, button):
-        print("Start")
-
-    def btn_stop_clicked_cb(self, button):
-        print("Stop")
-
-    def btn_reset_clicked_cb(self, button):
-        print("Reset")
-
-
-handler = Handler()
-
-
 def callback(keystr):
     if keystr == KeyBinds.pomodoro.value:
         handler.btn_pomodoro_clicked_cb(None)
@@ -50,8 +25,10 @@ def callback(keystr):
     elif keystr == KeyBinds.long_break.value:
         handler.btn_long_break_clicked_cb(None)
     elif keystr == KeyBinds.timer.value:
-        handler.btn_start_clicked_cb(None)
-        handler.btn_stop_clicked_cb(None)
+        if handler.watch and handler.watch.is_alive():
+            handler.btn_stop_clicked_cb(None)
+        else:
+            handler.btn_start_clicked_cb(None)
     elif keystr == KeyBinds.reset.value:
         handler.btn_reset_clicked_cb(None)
     elif keystr == KeyBinds.quit.value:
@@ -59,11 +36,13 @@ def callback(keystr):
 
 
 if __name__ == "__main__":
+    handler = Handler
     builder = Gtk.Builder()
     builder.add_from_file("./pomodoro.glade")
-    builder.connect_signals(handler)
     window = builder.get_object("window")
     lbl_time = builder.get_object("lbl_time")
+    handler = Handler(lbl_time)
+    builder.connect_signals(handler)
     window.show_all()
     Keybinder.init()
     for keystr in KeyBinds:
